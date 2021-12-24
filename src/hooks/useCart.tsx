@@ -8,7 +8,7 @@ interface CartProviderProps {
 }
 
 interface UpdateProductAmount {
-  productId: number;
+  id: number;
   amount: number;
 }
 
@@ -24,7 +24,7 @@ interface CartContextData {
   cart: Product[];
   addProduct: (productId: number) => Promise<void>;
   removeProduct: (productId: number) => void;
-  updateProductAmount: ({ productId, amount }: UpdateProductAmount) => void;
+  updateProductAmount: ({ id, amount }: UpdateProductAmount) => void;
 }
 
 const CartContext = createContext<CartContextData>({} as CartContextData);
@@ -87,11 +87,27 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
   };
 
   const updateProductAmount = async ({
-    productId,
+    id,
     amount,
   }: UpdateProductAmount) => {
     try {
       // TODO
+      const cartUptd = [...cart];
+      const currentProduct = cartUptd.find(product => product.id === id);
+
+      const stock = await api.get(`/stock/${id}`)
+      const stockAmount = stock.data.amount;
+
+      if (!currentProduct) return
+      currentProduct.amount = amount
+
+      if (currentProduct.amount > stockAmount) {
+        toast.error('Quantidade solicitada fora de estoque');
+        return;
+      }
+
+      setCart(cartUptd)
+      localStorage.setItem('@RocketShoes:cart', JSON.stringify(cartUptd))
     } catch {
       // TODO
     }
