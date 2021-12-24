@@ -106,8 +106,16 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
         return;
       }
 
-      setCart(cartUptd)
-      localStorage.setItem('@RocketShoes:cart', JSON.stringify(cartUptd))
+      if (currentProduct.amount < 1) {
+        const newCart = cartUptd.filter(item => item.id !== currentProduct.id)
+        
+        setCart(newCart)
+        localStorage.setItem('@RocketShoes:cart', JSON.stringify(newCart))
+      } else {
+        setCart(cartUptd)
+        localStorage.setItem('@RocketShoes:cart', JSON.stringify(cartUptd))
+      }
+
     } catch {
       // TODO
     }
