@@ -12,6 +12,14 @@ interface UpdateProductAmount {
   amount: number;
 }
 
+interface ProductStorage {
+  id: number;
+  title: string;
+  price: number;
+  image: string;
+  amount: number;
+}
+
 interface CartContextData {
   cart: Product[];
   addProduct: (productId: number) => Promise<void>;
@@ -23,11 +31,12 @@ const CartContext = createContext<CartContextData>({} as CartContextData);
 
 export function CartProvider({ children }: CartProviderProps): JSX.Element {
   const [cart, setCart] = useState<Product[]>(() => {
-    // const storagedCart = Buscar dados do localStorage
+    const storagedCart = localStorage.getItem('@RocketShoes:cart')
 
-    // if (storagedCart) {
-    //   return JSON.parse(storagedCart);
-    // }
+    if (storagedCart) {
+      console.log('encontrou no local storage')
+      return JSON.parse(storagedCart);
+    }
 
     return [];
   });
@@ -35,8 +44,37 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
   const addProduct = async (productId: number) => {
     try {
       // TODO
+      const cartUptd = [...cart];
+      console.log('cartUptd', cartUptd)
+      const productExists = cartUptd.find(product => product.id === productId);
+
+      const stock = await api.get(`/stock/${productId}`)
+      const stockAmount = stock.data.amount;
+      const currentAmount = productExists ? productExists.amount : 0;
+      const amount = currentAmount + 1;
+
+      if (amount > stockAmount) {
+        toast.error('Quantidade solicitada fora de estoque');
+        return;
+      }
+
+      if (productExists) {
+        productExists.amount = amount
+      } else {
+        const product = await api.get(`/products/${productId}`)
+        const newProduct = {
+          ...product.data,
+          amount: 1
+        }
+
+        cartUptd.push(newProduct)
+      }
+
+      setCart(cartUptd)
+      localStorage.setItem('@RocketShoes:cart', JSON.stringify(cartUptd))
     } catch {
       // TODO
+      toast.error('Erro na alteração de quantidade do produto');
     }
   };
 
